@@ -1,0 +1,41 @@
+#set git to not give everything as stderr in powershell
+$env:GIT_REDIRECT_STDERR = '2>&1'
+
+# Variables start
+# Github username
+$gitHubUser = "yourusername"
+# Github dir on agent
+$githubDir = $stageDir +"\"+"gitHub"
+# name of git repository
+$gitRepoName = "sophia.survey.app.git"
+# Branch to commit to
+$branch = "master"
+# local folder destination
+$destPath = $githubDir +"\"+$gitRepoName
+# Variables end
+
+# Github repo url
+$destURL = 'https://' + $alias + '@github.com/'+$gitHubUser+'/'+$gitRepoName
+
+# Removing previously generated githubdir for a fresh start (wont do anything if there is no dir)
+Remove-Item -Path $githubDir -Recurse -force -ErrorAction Ignore
+[System.IO.Directory]::CreateDirectory($githubDir)
+
+# Enter new location on disk
+Set-Location $githubDir
+
+# clone github repository and enter
+git clone --branch $branch $destUrl $gitRepoName
+cd $gitRepoName
+
+# copy the code from Devops Sources over to the Github Repo
+Copy-item -Force -Recurse -Verbose '$(Build.SourcesDirectory)' -Destination $destPath
+
+# include all the changes
+git add --all
+
+# commit
+git commit -m 'DevOps Agent Build $(Build.BuildId)'
+
+# send it to github
+git push origin $branch
